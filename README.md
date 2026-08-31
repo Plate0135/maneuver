@@ -4,6 +4,10 @@
 
 The addon was built to make Puppetmaster maneuver management easier to read during gameplay while correctly isolating maneuver actions performed by the local player.
 
+## Preview
+
+![Maneuver HUD showing active Puppetmaster maneuvers and overload tracking](assets/maneuver-preview.png)
+
 **Version:** 1.0.0  
 **Author:** Plate  
 **Platform:** HorizonXI  
