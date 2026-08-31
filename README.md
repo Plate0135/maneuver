@@ -1,308 +1,173 @@
-Maneuver
+# Maneuver
 
-Maneuver is an Ashita v4 addon for HorizonXI designed for the Puppetmaster job.
+**Maneuver** is a configurable real-time Lua HUD addon for **HorizonXI** and **Ashita v4** that tracks Puppetmaster maneuvers, remaining duration, stack count, and server-reported automaton overload values.
 
-It tracks your active Maneuvers, displays their current overload value, shows remaining Maneuver duration, and provides an easy-to-read overload gauge.
+The addon was built to make Puppetmaster maneuver management easier to read during gameplay while correctly isolating maneuver actions performed by the local player.
 
-Author: Plate
-Platform: HorizonXI
-Client: Ashita v4
-Job: Puppetmaster
+**Version:** 1.0.0  
+**Author:** Plate  
+**Platform:** HorizonXI  
+**Client:** Ashita v4  
+**Job:** Puppetmaster
 
-Features
-Tracks your own Puppetmaster Maneuvers.
-Ignores Maneuvers used by other Puppetmasters.
-Supports all eight Maneuver elements:
-Fire
-Ice
-Wind
-Earth
-Thunder
-Water
-Light
-Dark
-Displays active Maneuver stack count: x1, x2, or x3.
-Displays remaining Maneuver duration.
-Automatically removes an element when its final Maneuver expires.
-Automatically hides the entire HUD when no Maneuvers are active.
-Resizable HUD.
-Persistent user settings.
-Adjustable background opacity.
-Optional timers, headers, backgrounds, and auto-hide behavior.
-Designed specifically for HorizonXI's level 75 era.
-Overload Gauge
+## Features
 
-The overload gauge is not a literal 0–100% overload chance meter.
+- Tracks Fire, Ice, Wind, Earth, Thunder, Water, Light, and Dark Maneuver.
+- Tracks active maneuver stacks (`x1`, `x2`, `x3`).
+- Displays remaining maneuver duration.
+- Displays the server-reported overload value for each active element.
+- Converts overload values into an easy-to-read visual gauge.
+- Uses the current player's dynamic server ID to ignore maneuvers performed by other players.
+- Removes expired maneuver rows immediately after the final stack expires.
+- Automatically hides the HUD when no maneuver information is active.
+- Resizable HUD with persistent user settings.
+- Configurable timers, headers, row backgrounds, opacity, auto-hide, and PUP-only behavior.
+- Includes troubleshooting/debug output for tracking problems.
 
-On HorizonXI, the value reported for a Maneuver represents its actual overload percentage. Maneuver converts that value into a larger visual gauge to make overload risk easier to see at a glance.
+## Overload Gauge
 
-Gauge Scale
+The gauge is **not a literal 0–100% overload chance meter**. Maneuver uses **30% actual overload as the full-gauge reference point** so changes in overload risk are easier to see at a glance.
 
-30% actual overload chance is treated as 100% on the visual gauge.
+```text
+Display Gauge = (Actual Overload % / 30) × 100
+```
 
-The conversion is:
+| Actual Overload | Gauge Display |
+| ---: | ---: |
+| 0% | 0% |
+| 3% | 10% |
+| 6% | 20% |
+| 9% | 30% |
+| 12% | 40% |
+| 15% | 50% |
+| 18% | 60% |
+| 21% | 70% |
+| 24% | 80% |
+| 27% | 90% |
+| 30%+ | 100% |
 
-Display Gauge = Actual Overload % / 30 × 100
+For example, if Maneuver reports `Actual: 15%` and the gauge is at `50%`, the actual overload value remains **15%**. The gauge is simply halfway to its 30% full-scale reference.
 
-Examples:
+## Installation
 
-Actual Overload	Gauge Display
-0%	0%
-3%	10%
-6%	20%
-9%	30%
-12%	40%
-15%	50%
-18%	60%
-21%	70%
-24%	80%
-27%	90%
-30%	100%
+1. Download the latest release.
+2. Extract the `maneuver` folder into your Ashita addons directory.
+3. Start HorizonXI.
+4. Load the addon:
 
-So if the addon shows:
+```text
+/addon load maneuver
+```
 
-Actual: 15%
-Gauge:  50%
+A typical installation looks like:
 
-your actual overload value is still 15%. The 50% simply means you are halfway to the addon's 30% = full gauge reference point.
-
-Values at or above 30% are displayed as a full gauge.
-
-Installation
-
-Download the latest release and place the maneuver folder into your Ashita addons directory.
-
-Your folder should look similar to:
-
+```text
 HorizonXI/
 └── Game/
     └── addons/
         └── maneuver/
             ├── maneuver.lua
-            ├── README.md
+            ├── README.txt
+            ├── LICENSE.txt
             └── assets/
+```
 
-Then start HorizonXI and enter:
+Reload after updating with `/addon reload maneuver`, or unload it with `/addon unload maneuver`.
 
-/addon load maneuver
+## Commands
 
-To reload the addon:
+| Command | Description |
+| --- | --- |
+| `/maneuver` | Toggle the HUD. |
+| `/maneuver show` | Show the HUD. |
+| `/maneuver hide` | Hide the HUD. |
+| `/maneuver help` | Display command help. |
+| `/maneuver clear` | Clear currently tracked maneuver data. |
+| `/maneuver reset` | Reset settings and HUD position/size. |
+| `/maneuver save` | Save settings. |
+| `/maneuver reload` | Reload saved settings. |
+| `/maneuver timer on\|off` | Enable or disable maneuver timers. |
+| `/maneuver autohide on\|off` | Enable or disable automatic hiding. |
+| `/maneuver headers on\|off` | Show or hide column headers. |
+| `/maneuver background on\|off` | Show or hide active-row backgrounds. |
+| `/maneuver opacity 0-100` | Set row-background opacity. |
+| `/maneuver puponly on\|off` | Restrict tracking/rendering to PUP main job. |
+| `/maneuver debug` | Toggle troubleshooting information. |
 
-/addon reload maneuver
+`/overload` and `/pupoverload` are retained as compatibility aliases for older development builds.
 
-To unload it:
+## Default Settings
 
-/addon unload maneuver
-Commands
+- Auto-hide: **On**
+- Timers: **On**
+- Headers: **On**
+- Row background: **On**
+- Row opacity: **94%**
+- PUP-only mode: **On**
 
-The main command is:
+Settings are persisted through Ashita's settings system.
 
-/maneuver
-Show / Hide
+## How It Works
 
-Toggle the HUD:
+Maneuver is event-driven. It listens for relevant game actions and messages, verifies that the maneuver originated from the local player, maintains the active maneuver state, associates HorizonXI overload information with the appropriate element, and renders the current state through an ImGui HUD.
 
-/maneuver
+```text
+HorizonXI action / message
+          │
+          ▼
+ Local-player validation
+          │
+          ▼
+ Maneuver state + timer tracking
+          │
+          ▼
+ Overload-value matching
+          │
+          ▼
+ Dynamic ImGui HUD rendering
+```
 
-Show it:
+The local player's server ID is obtained dynamically, so users do not need to edit the addon with a character name or manually configured player ID.
 
-/maneuver show
+## Technical Highlights
 
-Hide it:
+This project demonstrates practical use of:
 
-/maneuver hide
-Help
+- Lua application development
+- Event-driven programming
+- Real-time state management
+- Packet/action filtering
+- ImGui UI rendering
+- Persistent configuration
+- Dynamic asset loading
+- Input validation and command handling
+- Debugging and iterative user-interface development
+- Public release packaging and documentation
 
-Display the available commands:
+## Troubleshooting
 
-/maneuver help
-Clear
+If the HUD is off-screen or incorrectly sized, run:
 
-Clear the currently tracked Maneuver information:
-
-/maneuver clear
-Reset
-
-Restore the HUD and settings to their defaults:
-
+```text
 /maneuver reset
+```
 
-This can also be useful if the HUD is accidentally moved somewhere off-screen.
+If icons do not appear, confirm that the `assets` directory is installed beside `maneuver.lua`.
 
-Save Settings
+For tracking problems, enable troubleshooting information with:
 
-Save the current addon settings:
-
-/maneuver save
-Reload Settings
-
-Reload your saved settings:
-
-/maneuver reload
-Timer Settings
-
-Enable Maneuver timers:
-
-/maneuver timer on
-
-Disable Maneuver timers:
-
-/maneuver timer off
-
-When enabled, the timer displays how long the next active stack of that element has remaining.
-
-When the final Maneuver of that element expires, the row is removed.
-
-Auto-Hide
-
-Enable automatic hiding:
-
-/maneuver autohide on
-
-Disable automatic hiding:
-
-/maneuver autohide off
-
-With auto-hide enabled, the addon completely disappears whenever you have no active Maneuvers.
-
-Headers
-
-Enable column headers:
-
-/maneuver headers on
-
-Disable column headers:
-
-/maneuver headers off
-Row Background
-
-Enable the solid background behind active Maneuver rows:
-
-/maneuver background on
-
-Disable it:
-
-/maneuver background off
-Background Opacity
-
-Change the opacity of the row background:
-
-/maneuver opacity 80
-
-Replace 80 with your desired opacity value.
-
-For example:
-
-/maneuver opacity 100
-
-Fully opaque.
-
-/maneuver opacity 50
-
-50% opacity.
-
-/maneuver opacity 20
-
-Very transparent.
-
-Puppetmaster-Only Mode
-
-By default, Maneuver is intended to operate while Puppetmaster is your main job.
-
-Enable PUP-only behavior:
-
-/maneuver puponly on
-
-Disable it:
-
-/maneuver puponly off
-How Player Detection Works
-
-Maneuver does not require you to enter your character name or manually configure a player ID.
-
-The addon obtains the current player's server ID dynamically and uses incoming action information to verify that the Maneuver was actually performed by you.
-
-This is important when multiple Puppetmasters are nearby because another player's Maneuvers should not update your tracker.
-
-Maneuver Stacks
-
-Maneuver supports the normal Puppetmaster limit of three active Maneuvers.
-
-Examples:
-
-Fire x1
-Fire x2
-Fire x3
-
-Different elements can also be tracked simultaneously:
-
-Fire x2
-Wind x1
-
-When three Maneuvers are already active and another Maneuver is used, the addon updates its active Maneuver tracking accordingly.
-
-Supported Elements
-Element	Supported
-Fire	✅
-Ice	✅
-Wind	✅
-Earth	✅
-Thunder	✅
-Water	✅
-Light	✅
-Dark	✅
-Compatibility
-
-Maneuver was developed for:
-
-HorizonXI
-Ashita v4
-Puppetmaster
-Level 75 / Treasures of Aht Urhgan-era HorizonXI gameplay
-
-It is not currently intended as a retail FFXI addon.
-
-Troubleshooting
-
-If the addon is behaving unexpectedly, first try:
-
-/maneuver clear
-
-Then:
-
-/addon reload maneuver
-
-If the HUD position or settings become unusable:
-
-/maneuver reset
-
-For additional troubleshooting information:
-
+```text
 /maneuver debug
+```
 
-Debug mode is primarily intended for diagnosing packet or Maneuver detection issues.
+## Compatibility
 
-Testing
+Maneuver was developed and tested for **HorizonXI's level-75 era environment using Ashita v4**. Behavior on other FFXI servers or clients is not guaranteed.
 
-If you are testing Maneuver on a new character, useful things to verify include:
+## Contributing & Testing
 
-Fire, Ice, Wind, Earth, Thunder, Water, Light, and Dark Maneuvers are recognized correctly.
-x1, x2, and x3 stacks display correctly.
-Maneuver timers expire correctly.
-Rows disappear when their final Maneuver expires.
-The HUD disappears when no Maneuvers remain and auto-hide is enabled.
-Resizing works correctly.
-Settings survive an addon reload.
-Another Puppetmaster's Maneuvers do not modify your HUD.
+Bug reports and testing feedback are welcome. When reporting a tracking issue, include what maneuver was used, what the HUD displayed, and any useful output from `/maneuver debug`.
 
-Testing with two Puppetmasters standing near one another is especially helpful for confirming player filtering.
+## License
 
-Credits
-
-Maneuver was created by Plate for the HorizonXI Puppetmaster community.
-
-Feedback, bug reports, and testing from other HorizonXI Puppetmasters are welcome.
-
-Disclaimer
-
-Maneuver is a third-party community addon and is not affiliated with or endorsed by HorizonXI, Square Enix, or the Final Fantasy XI development team.
+Maneuver is released under the [MIT License](LICENSE).
